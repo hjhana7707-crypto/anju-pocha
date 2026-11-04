@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>안주 뽑기 포차</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0F1B33; --navy2:#172547; --navy3:#1F3159;
+  --orange:#F4772B; --yellow:#FFD166; --green:#2BB673; --red:#D62828;
+  --cream:#FFF4E3; --paper:#FFF8E7; --ink:#1E1B16; --muted:#7A7265; --line:#E7DCC6;
+  --disp:'Black Han Sans','맑은 고딕','Malgun Gothic',sans-serif;
+  --body:'Noto Sans KR','맑은 고딕','Malgun Gothic',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--navy);color:var(--cream);font-family:var(--body);-webkit-font-smoothing:antialiased}
+body{
+  background:
+    radial-gradient(circle at 12% 2%, rgba(255,209,102,.18) 0 18px, transparent 19px),
+    radial-gradient(circle at 36% 1%, rgba(255,209,102,.14) 0 14px, transparent 15px),
+    radial-gradient(circle at 62% 2%, rgba(255,209,102,.18) 0 18px, transparent 19px),
+    radial-gradient(circle at 88% 1%, rgba(255,209,102,.14) 0 14px, transparent 15px),
+    var(--navy);
+}
+.app{max-width:520px;margin:0 auto;padding:0 16px 48px}
+
+/* 천막 + 간판 */
+.awning{margin:0 -16px;height:26px;background:repeating-linear-gradient(90deg,var(--orange) 0 28px,var(--cream) 28px 56px);border-bottom:4px solid #c85a12;border-radius:0 0 14px 14px}
+.sign{margin:18px 0 6px;display:flex;align-items:flex-end;gap:12px}
+.sign h1{font-family:var(--disp);font-weight:400;font-size:46px;line-height:1;margin:0;color:var(--yellow);text-shadow:0 3px 0 #b8620f,0 0 24px rgba(255,209,102,.35);letter-spacing:1px}
+.sign h1 span[contenteditable]{outline:none;border-bottom:2px dashed transparent}
+.sign h1 span[contenteditable]:focus{border-bottom-color:var(--orange)}
+.sign small{font-size:14px;color:#c9d2e6;margin-bottom:8px}
+.tagline{margin:0 0 18px;color:#aeb9d1;font-size:15px}
+
+/* 모드 */
+.modes{display:flex;gap:8px;margin-bottom:14px}
+.modes button{flex:1;background:var(--navy2);color:#c9d2e6;border:2px solid var(--navy3);border-radius:12px;padding:12px 10px;font:700 16px var(--body);cursor:pointer}
+.modes button[aria-selected="true"]{background:var(--orange);border-color:var(--orange);color:#1a0c02}
+
+/* 조건판 */
+.board{background:var(--navy2);border:2px solid var(--navy3);border-radius:16px;padding:14px 14px 10px}
+.group{padding:8px 0 10px;border-bottom:1px dashed #2b3d66}
+.group:last-of-type{border-bottom:0}
+.group h3{margin:0 0 8px;font:400 19px var(--disp);color:var(--yellow);letter-spacing:.5px}
+.group h3 em{font:500 13px var(--body);color:#aeb9d1;margin-left:8px;font-style:normal}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--navy3);color:var(--cream);border:2px solid transparent;border-radius:999px;padding:9px 14px;font:500 15px var(--body);cursor:pointer;transition:transform .08s}
+.chip:active{transform:scale(.96)}
+.chip[aria-pressed="true"]{background:var(--yellow);color:#1a0c02;border-color:var(--yellow);font-weight:700}
+.chip:focus-visible,.modes button:focus-visible,.big:focus-visible,.ghost:focus-visible,.opt:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.temp{display:flex;align-items:center;gap:12px}
+.temp input[type=range]{flex:1;accent-color:var(--orange)}
+.temp output{min-width:92px;font:700 17px var(--body);color:var(--yellow);text-align:right}
+.toolrow{display:flex;gap:8px;margin-top:10px}
+.ghost{background:transparent;color:#c9d2e6;border:2px solid var(--navy3);border-radius:10px;padding:9px 12px;font:500 14px var(--body);cursor:pointer}
+.ghost:hover{border-color:#6a7ba3}
+
+/* 큰 버튼 */
+.big{display:block;width:100%;margin:16px 0 8px;background:var(--orange);color:#1a0c02;border:0;border-bottom:6px solid #b8530f;border-radius:16px;padding:18px;font:400 30px var(--disp);letter-spacing:1px;cursor:pointer}
+.big:active{border-bottom-width:2px;transform:translateY(4px)}
+.big[disabled]{opacity:.6;cursor:default}
+
+/* 룰렛 */
+.reel{display:none;margin:12px 0;background:var(--navy2);border:2px solid var(--navy3);border-radius:16px;padding:14px;overflow:hidden}
+.reel.on{display:block}
+.reel .win{height:74px;display:flex;align-items:center;justify-content:center;background:#0a1226;border-radius:12px;border:2px solid var(--yellow);font:400 34px var(--disp);color:var(--cream);position:relative}
+.reel .win::before,.reel .win::after{content:"";position:absolute;top:50%;width:0;height:0;border:10px solid transparent;margin-top:-10px}
+.reel .win::before{left:-2px;border-left-color:var(--yellow)}
+.reel .win::after{right:-2px;border-right-color:var(--yellow)}
+.reel p{margin:10px 0 0;text-align:center;color:#aeb9d1;font-size:14px}
+.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* 영수증 */
+.receipt{display:none;position:relative;margin:22px 0 0;background:var(--paper);color:var(--ink);padding:26px 22px 24px;border-radius:2px}
+.receipt::before,.receipt::after{content:"";position:absolute;left:0;right:0;height:14px;pointer-events:none}
+.receipt::before{top:-13px;background:radial-gradient(circle at 10px 16px, var(--paper) 10px, transparent 11px) 0 0/20px 14px repeat-x}
+.receipt::after{bottom:-13px;background:radial-gradient(circle at 10px -2px, var(--paper) 10px, transparent 11px) 0 0/20px 14px repeat-x}
+.receipt.on{display:block}
+.receipt .shop{font:400 22px var(--disp);text-align:left;margin:0 0 2px;color:#2d2520}
+.receipt .meta{text-align:left;color:var(--muted);font-size:13px;margin:0 0 14px}
+.receipt .cond{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start;margin:0 92px 16px 0}
+.receipt .cond span{border:1.5px solid #b9ad97;border-radius:999px;padding:3px 10px;font-size:13px;color:#4a4238}
+.receipt .hero{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:2px dashed #cfc3ab;border-bottom:2px dashed #cfc3ab}
+.receipt .hero .emoji{font-size:58px;line-height:1}
+.receipt .hero .name{font:400 clamp(24px,7.5vw,34px) var(--disp);line-height:1.1;margin:0;word-break:keep-all}
+.receipt .hero .why{margin:6px 0 0;font-size:15px;color:#4a4238;line-height:1.5}
+.receipt .stamp{position:absolute;right:18px;top:16px;width:92px;height:92px;border:4px solid var(--red);border-radius:50%;color:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;font:400 13px var(--disp);transform:rotate(-14deg);opacity:.92;background:rgba(255,248,231,.6)}
+.receipt .stamp b{font-size:30px;line-height:1;font-weight:400}
+.stamp.bang{animation:bang .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes bang{0%{transform:rotate(-14deg) scale(2.6);opacity:0}60%{opacity:1}100%{transform:rotate(-14deg) scale(1)}}
+.receipt .tip{margin:12px 0 0;padding:10px 12px;background:#F3E9D3;border-radius:8px;font-size:14px;line-height:1.5}
+.receipt .prep{margin:12px 0 0;display:none}
+.receipt .prep.on{display:block}
+.receipt .prep h4{margin:0 0 8px;font:400 18px var(--disp);color:#2d2520}
+.receipt .prep h4 em{font:500 12px var(--body);color:var(--muted);font-style:normal;margin-left:6px}
+.receipt .prep ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.receipt .prep li{background:#fff;border:1.5px solid #d9cdb4;border-radius:8px;padding:5px 10px;font-size:14px;color:#3a332b}
+.receipt .alts{margin:14px 0 0;padding:0;list-style:none}
+.receipt .alts li{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px dotted #cfc3ab;font-size:15px}
+.receipt .alts li:first-child{color:var(--muted);font-size:13px;border-bottom:0;padding-bottom:0}
+.receipt .alts li b{font-weight:500}
+.receipt .quote{margin:16px 0 0;text-align:center;color:var(--muted);font-size:13px}
+.receipt .combo{margin:12px 0 0;padding:10px 12px;border:2px solid var(--red);border-radius:8px;font-size:14px;line-height:1.5;color:#7a1515}
+.actions{display:flex;gap:8px;margin-top:12px}
+.actions .ghost{flex:1;text-align:center}
+
+/* 퀴즈 */
+.quiz{display:none}
+.quiz.on{display:block}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;margin:4px 0 10px}
+.qhead .score{font:400 26px var(--disp);color:var(--yellow)}
+.qhead .score small{font:500 13px var(--body);color:#aeb9d1;margin-left:6px}
+.scene{background:var(--navy2);border:2px solid var(--navy3);border-radius:16px;padding:16px}
+.scene h2{font:400 24px var(--disp);margin:0 0 10px;color:var(--cream)}
+.scene .cond{display:flex;flex-wrap:wrap;gap:6px}
+.scene .cond span{background:var(--navy3);border-radius:999px;padding:6px 12px;font-size:14px}
+.opts{display:grid;gap:10px;margin:14px 0 0}
+.opt{display:flex;align-items:center;gap:12px;background:var(--navy2);border:2px solid var(--navy3);border-radius:14px;padding:14px;color:var(--cream);font:500 18px var(--body);cursor:pointer;text-align:left}
+.opt .e{font-size:30px}
+.opt:hover{border-color:#6a7ba3}
+.opt.ok{background:#15402e;border-color:var(--green)}
+.opt.no{background:#4a1b1b;border-color:var(--red);opacity:.85}
+.opt[disabled]{cursor:default}
+.reveal{display:none;margin-top:12px;background:var(--paper);color:var(--ink);border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.55}
+.reveal.on{display:block}
+.reveal b{font-weight:700}
+.final{display:none;text-align:center;padding:26px 16px;background:var(--paper);color:var(--ink);border-radius:16px;margin-top:12px}
+.final.on{display:block}
+.final .rank{font:400 44px var(--disp);margin:6px 0 2px;color:var(--red)}
+.final p{margin:6px 0;color:#4a4238}
+
+.foot{margin-top:28px;text-align:center;color:#6f7d9c;font-size:12px;line-height:1.6}
+canvas.confetti{position:fixed;inset:0;pointer-events:none;z-index:9}
+@media (prefers-reduced-motion: reduce){.shake,.stamp.bang{animation:none}}
+@media (max-width:380px){.sign h1{font-size:38px}.big{font-size:26px}}
+</style>
+</head>
+<body>
+<canvas class="confetti" id="confetti"></canvas>
+<div class="app">
+  <div class="awning"></div>
+  <div class="sign">
+    <h1><span contenteditable="true" spellcheck="false" id="shop">회신사 포차</span></h1>
+    <small>안주 뽑기</small>
+  </div>
+  <p class="tagline">오늘 조건 찍고 뽑기 한 번. 안주는 포차가 정해드립니다.</p>
+
+  <div class="modes" role="tablist">
+    <button role="tab" id="tabPick" aria-selected="true">오늘 안주 뽑기</button>
+    <button role="tab" id="tabQuiz" aria-selected="false">안주 퀴즈</button>
+  </div>
+
+  <!-- ===== 뽑기 모드 ===== -->
+  <section id="pick">
+    <div class="board" id="board"></div>
+    <button class="big" id="spin">안주 뽑기!</button>
+    <div class="reel" id="reel"><div class="win" id="reelWin">…</div><p>포차 사장님이 고민 중</p></div>
+
+    <div class="receipt" id="receipt">
+      <div class="stamp" id="stamp"><span>궁합</span><b id="pct">00</b><span>%</span></div>
+      <p class="shop" id="rShop">회신사 포차</p>
+      <p class="meta" id="rMeta">주문서</p>
+      <div class="cond" id="rCond"></div>
+      <div class="hero">
+        <div class="emoji" id="rEmoji">🍢</div>
+        <div><p class="name" id="rName">—</p><p class="why" id="rWhy"></p></div>
+      </div>
+      <div class="combo" id="rCombo" style="display:none"></div>
+      <div class="tip" id="rTip"></div>
+      <div class="prep" id="rPrep"><h4>준비물<em id="rPrepNote"></em></h4><ul id="rPrepList"></ul></div>
+      <ul class="alts" id="rAlts"></ul>
+      <p class="quote" id="rQuote"></p>
+    </div>
+    <div class="actions" id="pickActions" style="display:none">
+      <button class="ghost" id="again">다시 뽑기</button>
+      <button class="ghost" id="randomAgain">상황 바꿔서 뽑기</button>
+    </div>
+  </section>
+
+  <!-- ===== 퀴즈 모드 ===== -->
+  <section class="quiz" id="quiz">
+    <div class="qhead"><div id="qNo">1 / 10</div><div class="score" id="qScore">0<small>점</small></div></div>
+    <div class="scene">
+      <h2>이 상황에 최고의 안주는?</h2>
+      <div class="cond" id="qCond"></div>
+    </div>
+    <div class="opts" id="qOpts"></div>
+    <div class="reveal" id="qReveal"></div>
+    <div class="actions"><button class="ghost" id="qNext" style="display:none">다음 문제</button></div>
+    <div class="final" id="qFinal">
+      <p>10문제 끝</p>
+      <div class="rank" id="qRank">—</div>
+      <p id="qFinalText"></p>
+      <button class="ghost" id="qRestart" style="margin-top:10px">한 판 더</button>
+    </div>
+  </section>
+
+  <p class="foot">가상의 추천 게임입니다. 술은 적당히, 안주는 든든히.<br>간판 이름은 눌러서 바꿀 수 있어요.</p>
+</div>
+
+<script>
+/* ---------------- 변수 정의 ---------------- */
+const VARS = {
+  season:  {label:'계절', opts:['봄','여름','가을','겨울']},
+  weather: {label:'날씨', opts:['맑음','흐림','비','눈','폭염','한파','바람']},
+  drink:   {label:'주종', opts:['소주','맥주','소맥','막걸리','와인','하이볼','위스키','사케']},
+  mood:    {label:'기분', opts:['신남','우울','빡침','피곤','설렘','심심','축하','스트레스']},
+  place:   {label:'어디서', opts:['집','포차','호프집','편의점','캠핑','이자카야']},
+  people:  {label:'누구랑', opts:['혼술','둘이','여럿']},
+  hunger:  {label:'배 상태', opts:['출출','배고픔','배부름']},
+};
+const BANDS = ['한파','쌀쌀','선선','따뜻','더움','폭염'];
+function bandOf(t){ return t<=0?0 : t<=9?1 : t<=17?2 : t<=24?3 : t<=30?4 : 5; }
+const TEMP_TARGET = {cold:[0,1], cool:[1,2], warm:[2,3], hot:[4,5], any:[]};
+
+/* ---------------- 안주 데이터 ----------------
+ d=주종 w=날씨 t=온도 취향 s=계절 m=기분 p=장소 g=인원 h=배 상태 l=한 줄 tip=꿀팁 */
+const FOODS = [
+{n:'파전',e:'🥞',d:{막걸리:3,소주:1,맥주:1},w:{비:3,흐림:1,바람:1},t:'cool',s:{여름:1,가을:1},m:{우울:1,심심:1,피곤:1},p:{집:2,포차:2},g:{둘이:2,여럿:2,혼술:1},h:{출출:2,배고픔:1},r:['쪽파 한 줌','부침가루 1컵','물 1컵','계란 1개','식용유 넉넉히','간장·식초(초간장)'],l:'가장자리 바삭한 부분이 진짜예요. 그거 뺏기면 싸움 납니다.',tip:'막걸리는 흔들지 말고 병을 살살 눕혀서 섞기. 반죽에 얼음물 쓰면 더 바삭.'},
+{n:'김치전',e:'🫓',d:{막걸리:3,소주:2},w:{비:3,흐림:1},t:'cool',m:{우울:2,피곤:1,심심:1},p:{집:3,포차:1},g:{혼술:2,둘이:2,여럿:1},h:{출출:2,배고픔:1},r:['신김치 1컵','김치국물 3큰술','부침가루 1컵','물 2/3컵','식용유'],l:'신김치만 있으면 10분. 비 오는 날 집에서 이거면 밖에 안 나가도 됩니다.',tip:'김치 국물을 반죽에 넣어야 색도 맛도 삽니다. 얇게, 센 불에.'},
+{n:'두부김치',e:'🧈',d:{소주:3,막걸리:2,소맥:1},w:{흐림:1,비:1,한파:1,눈:1},t:'cool',m:{스트레스:1,우울:1,심심:1},p:{집:2,포차:3},g:{둘이:2,여럿:1,혼술:1},h:{출출:2,배고픔:1},r:['두부 반 모','김치 1컵','돼지고기 100g','설탕 1작은술','참기름','깨'],l:'소주 안주의 기본값. 고민될 땐 이걸로 시작하면 실패가 없어요.',tip:'두부는 데쳐서 뜨겁게, 김치는 돼지고기랑 볶아서. 온도 차이가 맛입니다.'},
+{n:'삼겹살',e:'🥓',d:{소주:3,소맥:3,맥주:1},w:{맑음:1,한파:1,바람:1},t:'any',m:{신남:2,축하:1,스트레스:2},p:{캠핑:3,집:2,포차:1},g:{둘이:2,여럿:3},h:{배고픔:3,출출:1},r:['삼겹살 200g','쌈채소','쌈장','마늘','김치','소금·후추'],l:'한국인의 치트키. 기분 안 좋을 때도, 좋을 때도 이유가 됩니다.',tip:'자주 뒤집지 말고 한 면 제대로 익힌 뒤 한 번만. 기름에 김치 구우면 2차 안주.'},
+{n:'곱창',e:'🔥',d:{소주:3,소맥:2},w:{한파:1,흐림:1,바람:1},t:'cold',m:{스트레스:3,빡침:2,우울:1},p:{포차:2,집:1},g:{여럿:2,둘이:2},h:{배고픔:2,출출:1},r:['양념곱창 200g(마트)','양파 반 개','대파','깻잎','밥·김가루(볶음밥)'],l:'스트레스 받은 날의 처방전. 기름 튀는 소리부터 치료가 시작됩니다.',tip:'마지막 볶음밥은 선택이 아니라 의무입니다.'},
+{n:'닭발',e:'🌶️',d:{소주:3,소맥:2,맥주:1},w:{비:1,한파:1,흐림:1},t:'cool',m:{빡침:3,스트레스:3,우울:2},p:{포차:3,집:2},g:{둘이:2,혼술:1,여럿:1},h:{출출:2,배고픔:1},r:['양념 닭발 밀키트','밥·김가루·참기름(주먹밥)','계란 2개(계란찜)'],l:'화난 날엔 매운 걸로 땀 빼야죠. 내일 아침은 미래의 내가 책임집니다.',tip:'주먹밥이랑 계란찜은 소화기. 무뼈로 시키면 집중력이 올라갑니다.'},
+{n:'어묵탕',e:'🍢',d:{소주:3,사케:2,소맥:1},w:{눈:3,한파:3,비:2,바람:2},t:'cold',s:{겨울:2},m:{피곤:2,우울:2,심심:1},p:{포차:3,편의점:2,집:2},g:{혼술:2,둘이:2,여럿:1},h:{출출:3,배고픔:1},r:['어묵 4장','무 한 토막','다시마 1장','국간장 1큰술','청양고추 1개','대파'],l:'추운 날 국물 한 모금에 소주 한 잔. 설명이 필요 없습니다.',tip:'무랑 다시마 넣고 끓이면 집에서도 포차 맛. 청양고추 하나는 꼭.'},
+{n:'김치찌개',e:'🍲',d:{소주:3,소맥:1},w:{한파:2,비:1,눈:1},t:'cold',m:{피곤:2,우울:1,스트레스:1},p:{집:3},g:{혼술:2,둘이:2},h:{배고픔:3},r:['신김치 1컵','돼지고기 100g','두부 1/4모','대파','고춧가루 1큰술','설탕 조금'],l:'집에 있는 걸로 만드는 최강 안주. 밥까지 말면 안주이자 식사.',tip:'돼지고기 먼저 볶고 김치 넣고 또 볶고. 물은 그다음.'},
+{n:'골뱅이무침 + 소면',e:'🐚',d:{소주:3,맥주:2,소맥:2},w:{폭염:2,맑음:1},t:'hot',s:{여름:2},m:{신남:1,스트레스:1,심심:1},p:{포차:3,호프집:2,집:1},g:{둘이:2,여럿:2},h:{출출:2,배고픔:1},r:['골뱅이 통조림 1캔','소면 1인분','오이 반 개','양파 1/4개','고추장 2큰술','식초·설탕 1큰술씩','참기름'],l:'새콤달콤매콤. 더운 날 입맛 없을 때도 이건 들어갑니다.',tip:'소면은 따로 삶아 찬물에 헹궈야 안 붇습니다. 통조림 골뱅이 국물 조금 넣으면 감칠맛.'},
+{n:'회',e:'🐟',d:{소주:3,사케:3,맥주:1},w:{맑음:1,폭염:1},t:'any',m:{축하:3,설렘:2,신남:2},p:{포차:2,집:2,이자카야:3},g:{여럿:2,둘이:2},h:{배고픔:2,출출:1},r:['모둠회 소(마트·시장)','초장','와사비·간장','쌈채소'],l:'축하할 일 있으면 회죠. 없으면 만들어서라도.',tip:'첫 점은 간장 없이. 매운탕까지가 한 세트입니다.'},
+{n:'조개구이',e:'🦪',d:{소주:3,맥주:1,소맥:1},w:{맑음:1,바람:1},t:'cool',m:{신남:2,축하:1,설렘:1},p:{캠핑:3,포차:2},g:{여럿:3,둘이:2},h:{배고픔:2,출출:1},r:['해감 모둠조개 500g','버터','다진 마늘','청양고추','피자치즈 조금'],l:'불 앞에서 입 벌어지는 거 기다리는 시간이 안주의 절반.',tip:'가리비 위에 치즈 올리면 애들도 먹고 어른도 먹습니다.'},
+{n:'계란말이',e:'🍳',d:{소주:3,막걸리:1,맥주:1,사케:1},w:{흐림:1},t:'any',m:{피곤:2,심심:1,우울:1},p:{포차:3,집:2,이자카야:1},g:{혼술:2,둘이:2},h:{출출:3},r:['계란 3개','대파·당근 다진 것','소금','우유 1큰술','식용유'],l:'포차 가면 무조건 시키는 거. 두툼할수록 사장님 인심.',tip:'약불에 천천히, 우유 한 스푼. 케첩은 취향이지만 명란은 국룰.'},
+{n:'치킨',e:'🍗',d:{맥주:3,소맥:3,하이볼:2},w:{비:1,맑음:1},t:'any',m:{신남:3,축하:2,스트레스:1,심심:1},p:{집:3,호프집:3},g:{여럿:3,둘이:2,혼술:1},h:{배고픔:3,출출:1},r:['배달 앱','치킨무','맥주 (끝)'],l:'치맥은 토론 대상이 아닙니다. 그냥 진리입니다.',tip:'반반 고민하지 말고 두 마리. 남으면 내일 아침이 행복합니다.'},
+{n:'피자',e:'🍕',d:{맥주:3,하이볼:2,와인:2,소맥:1},w:{},t:'any',m:{신남:1,심심:1,피곤:1},p:{집:3,호프집:2},g:{여럿:2,둘이:2},h:{배고픔:3},r:['냉동피자 1판 또는 배달','핫소스','피클'],l:'한 판 시켜놓고 식어도 맛있는 몇 안 되는 안주.',tip:'와인이면 토마토 많은 걸로, 맥주면 페퍼로니. 하이볼은 아무거나.'},
+{n:'감자튀김',e:'🍟',d:{맥주:3,하이볼:3},w:{},t:'any',m:{심심:2,피곤:1,신남:1},p:{호프집:3,집:2},g:{혼술:1,둘이:2,여럿:2},h:{출출:3,배부름:1},r:['냉동 감자튀김 200g','소금','케첩·마요네즈','에어프라이어 200도 15분'],l:'이거 하나로 맥주 세 잔은 갑니다. 소금 많이.',tip:'에어프라이어 200도 15분이면 냉동도 호프집 맛. 트러플 오일 한 방울이면 플렉스.'},
+{n:'나초 + 치즈',e:'🧀',d:{맥주:3,하이볼:2,와인:1},w:{},t:'any',m:{신남:2,설렘:1,심심:1},p:{호프집:3,집:2},g:{둘이:2,여럿:2},h:{출출:2},r:['나초 1봉','피자치즈 한 줌','살사 소스','할라피뇨 조금'],l:'손이 멈추지 않는 안주. 대화가 길어질 때 필요합니다.',tip:'치즈는 전자레인지 40초. 살사 대신 김치 다져 올리면 의외로 됩니다.'},
+{n:'소시지 구이',e:'🌭',d:{맥주:3,하이볼:2,소주:1},w:{},t:'any',m:{피곤:2,심심:2},p:{편의점:3,집:2,캠핑:2},g:{혼술:3,둘이:1},h:{출출:3},r:['소시지 2~3개','머스터드','양파 반 개(식초·설탕 절임)','식용유'],l:'편의점 앞 테이블의 주인공. 칼집 내서 구우면 급이 달라집니다.',tip:'머스터드랑 양파절임만 있으면 호프집 안 가도 됩니다.'},
+{n:'먹태',e:'🐠',d:{맥주:3,소주:2,하이볼:1},w:{},t:'any',m:{심심:2,설렘:1,신남:1},p:{호프집:3,편의점:2,집:2,포차:1},g:{둘이:2,여럿:2,혼술:1},h:{출출:3,배부름:2},r:['먹태 1마리','마요네즈','청양고추','버터 조금'],l:'찢는 재미가 반, 마요네즈 찍는 재미가 반.',tip:'마요네즈에 청양고추 다져 넣으면 끝. 버터 두르고 살짝 구우면 더 끝.'},
+{n:'노가리',e:'🐟',d:{맥주:3,소주:1},w:{맑음:1},t:'warm',m:{심심:2,신남:1},p:{호프집:3,포차:1},g:{여럿:3,둘이:2},h:{출출:2,배부름:2},r:['노가리 3마리','고추장 1큰술','마요네즈 2큰술'],l:'천 원짜리 안주로 두 시간 떠드는 기술. 노가리의 어원이 괜히 있는 게 아닙니다.',tip:'고추장 마요가 기본, 와사비 마요가 응용.'},
+{n:'마른오징어',e:'🦑',d:{맥주:3,소주:2,막걸리:1,위스키:1},w:{},t:'any',m:{심심:3,피곤:1},p:{편의점:2,집:2,캠핑:2,호프집:1},g:{혼술:2,둘이:2},h:{출출:2,배부름:2},r:['마른오징어 1마리','마요네즈·고추장','땅콩 한 줌'],l:'씹는 시간이 길어서 술이 느리게 줄어드는 효자 안주.',tip:'가스불 직화로 살짝. 땅콩이랑 같이 먹으면 턱이 덜 아픕니다.'},
+{n:'견과류 한 접시',e:'🥜',d:{위스키:3,하이볼:2,맥주:2,와인:1},w:{},t:'any',m:{심심:2,피곤:2,우울:1},p:{집:3,편의점:2},g:{혼술:3,둘이:1},h:{배부름:3,출출:1},r:['아몬드·호두·캐슈 한 줌씩','소금 조금'],l:'혼자 조용히 마시는 날의 동반자. 소리도 안 나고 손도 안 더럽습니다.',tip:'아몬드·호두·캐슈 섞어서 볶은 소금 살짝. 위스키는 얼음 하나.'},
+{n:'치즈 플래터',e:'🧀',d:{와인:3,위스키:2,하이볼:1},w:{},t:'any',m:{설렘:3,축하:2,신남:1},p:{집:3},g:{둘이:3,혼술:1},h:{배부름:2,출출:2},r:['브리 또는 카망베르','체다','블루치즈 조금','크래커','꿀','포도 몇 알'],l:'분위기 잡는 날엔 치즈 세 종류면 됩니다. 이름은 몰라도 돼요.',tip:'부드러운 거 하나, 단단한 거 하나, 꼬린내 나는 거 하나. 꿀이랑 크래커.'},
+{n:'제철 과일',e:'🍇',d:{와인:3,하이볼:1,사케:1},w:{맑음:1,폭염:1},t:'warm',s:{봄:2,여름:1},m:{설렘:3,신남:1,피곤:1},p:{집:3},g:{둘이:2,혼술:1},h:{배부름:3},r:['딸기·포도·복숭아 중 제철 1팩','치즈 조금(선택)'],l:'와인에 과일이면 술이 아니라 디저트가 됩니다. 그게 함정이에요.',tip:'딸기엔 스파클링, 포도엔 레드, 복숭아엔 화이트. 틀려도 맛있습니다.'},
+{n:'스테이크',e:'🥩',d:{와인:3,위스키:2,맥주:1,하이볼:1},w:{},t:'any',m:{축하:3,설렘:2,신남:1},p:{집:2},g:{둘이:3,혼술:1},h:{배고픔:3},r:['소고기 등심 200g','소금·후추','버터','마늘 3쪽','로즈마리(선택)'],l:'오늘은 좀 쓰는 날. 마트 고기도 잘 구우면 레스토랑입니다.',tip:'굽기 전 30분 실온, 구운 뒤 5분 휴지. 이 두 개만 지키면 됩니다.'},
+{n:'파스타',e:'🍝',d:{와인:3,하이볼:1,맥주:1},w:{},t:'any',m:{설렘:2,축하:1,피곤:1},p:{집:3},g:{둘이:2,혼술:1},h:{배고픔:2,출출:1},r:['스파게티면 100g','마늘 3쪽','올리브유','페퍼론치노 또는 토마토소스','파마산 치즈'],l:'둘이 있는 날 집에서 한 냄비. 설거지는 안 먹은 사람이.',tip:'면수는 버리지 말고 소스에. 마늘은 태우지 말고.'},
+{n:'다크 초콜릿',e:'🍫',d:{위스키:3,와인:2,하이볼:1},w:{한파:1,눈:1},t:'cold',s:{겨울:1},m:{우울:2,설렘:1,피곤:1},p:{집:3},g:{혼술:3,둘이:2},h:{배부름:3},r:['카카오 70% 이상 초콜릿 1판','견과류 조금'],l:'위스키 한 모금, 초콜릿 한 조각. 혼자인 밤이 조금 고급스러워집니다.',tip:'카카오 70% 이상. 위스키는 피트 강한 걸로 가면 어른의 맛.'},
+{n:'육포',e:'🥓',d:{위스키:3,하이볼:2,맥주:2,소주:1},w:{},t:'any',m:{심심:2,피곤:1,신남:1},p:{집:2,편의점:2,캠핑:2},g:{혼술:3,둘이:1},h:{배부름:2,출출:1},r:['육포 1봉(편의점)','땅콩 한 줌'],l:'오래 씹고 천천히 마시는 날. 캠핑 가서 불멍할 때도 이겁니다.',tip:'살짝 구우면 향이 올라옵니다. 하이볼이면 레몬 꼭.'},
+{n:'훈제연어',e:'🐟',d:{와인:3,위스키:2,하이볼:2,사케:1},w:{},t:'any',m:{설렘:2,축하:2},p:{집:2,이자카야:1},g:{둘이:2,혼술:1},h:{출출:2},r:['훈제연어 100g','크림치즈','양파 얇게','케이퍼','레몬','식빵 또는 크래커'],l:'크림치즈랑 양파만 있으면 집에서 바 분위기.',tip:'케이퍼 몇 알, 레몬 한 조각. 식빵 구워서 올리면 한 끼.'},
+{n:'가라아게',e:'🍗',d:{사케:3,하이볼:3,맥주:2},w:{},t:'any',m:{신남:1,심심:1,피곤:1},p:{이자카야:3,집:1},g:{둘이:2,여럿:2},h:{출출:2,배고픔:1},r:['닭다리살 200g','간장 1큰술','마늘·생강','전분','식용유 넉넉히','레몬','마요네즈'],l:'치킨의 사촌인데 하이볼이랑은 이쪽이 더 친합니다.',tip:'레몬 짜고 마요네즈. 두 번 튀기면 바삭함이 오래 갑니다.'},
+{n:'꼬치구이',e:'🍢',d:{사케:3,하이볼:3,맥주:2,소주:1},w:{바람:1,흐림:1},t:'cool',m:{피곤:1,신남:1,심심:1},p:{이자카야:3,포차:1},g:{둘이:2,여럿:2},h:{출출:2},r:['닭다리살 150g','대파 1대','소금','나무꼬치','데리야키 소스(선택)'],l:'한 꼬치에 한 잔. 속도 조절이 되는 안주라 다음 날이 편합니다.',tip:'닭껍질, 염통, 대파. 소금이 먼저고 타레는 나중.'},
+{n:'타코와사비',e:'🐙',d:{사케:3,하이볼:2,소주:1},w:{},t:'any',m:{심심:1,설렘:1},p:{이자카야:3},g:{혼술:2,둘이:2},h:{배부름:2,출출:1},r:['타코와사비 1팩(마트)','김 몇 장'],l:'코가 뻥 뚫리는 안주. 잔이 비는 속도가 빨라지니 조심.',tip:'김에 싸서 먹으면 양이 두 배로 느껴집니다.'},
+{n:'보쌈',e:'🥬',d:{소주:3,막걸리:2,소맥:2},w:{비:1,한파:1},t:'cool',m:{축하:1,신남:1,스트레스:1},p:{집:3,포차:1},g:{여럿:3,둘이:2},h:{배고픔:3},r:['앞다리 또는 삼겹 400g','된장 1큰술','커피 조금','배추김치','새우젓','마늘'],l:'여럿이 모인 날의 중심. 김치가 맛있으면 반은 먹고 들어갑니다.',tip:'새우젓은 아끼지 말고, 쌈은 욕심내지 말고.'},
+{n:'족발',e:'🐷',d:{소주:3,소맥:3,맥주:2},w:{},t:'any',m:{신남:2,스트레스:2,축하:1},p:{집:3},g:{여럿:3,둘이:2},h:{배고픔:3},r:['배달 족발 소','막국수 (끝)'],l:'앞다리냐 뒷다리냐로 싸우지 마세요. 양쪽 다 시키면 됩니다.',tip:'막국수 추가는 기본, 쟁반국수는 응용. 냉장고에 남으면 내일 볶음밥.'},
+{n:'도토리묵무침',e:'🟫',d:{막걸리:3,소주:1},w:{비:1,맑음:1},t:'warm',s:{봄:1,가을:1},m:{심심:1,피곤:1},p:{집:2,포차:1,캠핑:1},g:{둘이:2,여럿:1},h:{배부름:2,출출:1},r:['도토리묵 1모','오이','상추·깻잎','간장 2큰술','식초 1큰술','설탕·고춧가루','참기름·깨'],l:'배부른데 뭔가 먹고 싶을 때. 막걸리랑은 산에서 만난 사이.',tip:'오이·상추·깻잎 듬뿍, 간장 양념은 식초 넉넉히.'},
+{n:'홍어삼합',e:'🐡',d:{막걸리:3,소주:2},w:{비:1,한파:1},t:'cold',m:{빡침:2,신남:1,축하:1},p:{포차:2,집:1},g:{여럿:3,둘이:1},h:{배고픔:2,출출:1},r:['홍어 소포장(시장·마트)','삶은 돼지고기 200g','묵은지'],l:'용기 있는 자의 안주. 한 번 넘기면 그다음부터는 못 끊습니다.',tip:'묵은지, 삶은 돼지고기, 홍어. 순서는 홍어가 가운데.'},
+{n:'떡볶이',e:'🌶️',d:{맥주:2,소주:2,소맥:2,하이볼:1},w:{비:2,한파:1,흐림:1},t:'cool',m:{우울:2,스트레스:2,빡침:1,심심:1},p:{집:3,편의점:2,포차:1},g:{혼술:2,둘이:2},h:{출출:2,배고픔:1},r:['떡 1인분','어묵 1장','대파','고추장 1큰술','고춧가루·설탕 1큰술씩','삶은 계란 1개'],l:'우울한 날엔 매운 떡볶이. 눈물이 나면 매워서 그런 겁니다.',tip:'어묵 많이, 삶은 계란 하나. 치즈 올리면 맥주, 안 올리면 소주.'},
+{n:'라면',e:'🍜',d:{소주:3,소맥:2,맥주:1,막걸리:1},w:{비:2,눈:2,한파:2,바람:1},t:'cold',m:{피곤:3,우울:2,심심:1},p:{집:3,편의점:3,캠핑:3},g:{혼술:3,둘이:1},h:{배고픔:2,출출:2},r:['라면 1개','계란 1개','대파','치즈 한 장(선택)'],l:'피곤한 밤의 최종 병기. 손 많이 가는 거 다 필요 없습니다.',tip:'계란은 풀지 말고 반숙. 파 송송. 캠핑이면 코펠째로.'},
+{n:'편의점 세트',e:'🍙',d:{소주:2,맥주:2,하이볼:2,소맥:1},w:{},t:'any',m:{피곤:2,심심:2,우울:1},p:{편의점:3},g:{혼술:3,둘이:1},h:{출출:2,배고픔:1},r:['컵떡볶이','삼각김밥 1개','소시지 1개','전자레인지'],l:'컵떡볶이, 삼각김밥, 소시지. 편의점 앞 테이블이 오늘의 포차입니다.',tip:'전자레인지는 눈치 보지 말고 쓰세요. 그러라고 있는 겁니다.'},
+{n:'수박화채',e:'🍉',d:{하이볼:2,소주:1,맥주:1,막걸리:1,와인:1},w:{폭염:3,맑음:1},t:'hot',s:{여름:3},m:{신남:2,심심:1,설렘:1},p:{집:3,캠핑:2},g:{여럿:2,둘이:1},h:{배부름:3},r:['수박 1/4통','사이다 1캔','얼음','우유 조금(선택)'],l:'폭염엔 안주도 시원해야죠. 사이다 붓고 얼음 띄우면 끝.',tip:'소주 반 병을 화채에 붓는 건 선배들의 비법이지만 책임은 못 집니다.'},
+{n:'냉채족발',e:'🥒',d:{소주:3,맥주:2,소맥:2},w:{폭염:3,맑음:1},t:'hot',s:{여름:2},m:{스트레스:1,신남:1},p:{집:2,포차:1},g:{둘이:2,여럿:2},h:{배고픔:2,출출:1},r:['족발 슬라이스 200g 또는 배달','해파리냉채 1팩','오이','겨자 소스'],l:'더운 날 겨자 소스에 코 찡. 그 순간 더위가 잠깐 잊힙니다.',tip:'해파리 넉넉히, 오이 얇게. 겨자는 넣고 후회하는 법이 없습니다.'},
+{n:'물회',e:'🐟',d:{소주:3,맥주:1},w:{폭염:3,맑음:1},t:'hot',s:{여름:3},m:{신남:2,설렘:1},p:{포차:2,집:1},g:{둘이:2,여럿:2},h:{배고픔:2},r:['횟감 150g','오이·배·양파 채','초고추장 3큰술','식초·설탕','얼음물','소면(선택)'],l:'여름 바닷가 안주의 왕. 얼음 동동, 소주 한 잔.',tip:'밥 말면 식사, 소면 말면 안주. 둘 다 하면 그냥 행복.'},
+{n:'전어구이',e:'🐟',d:{소주:3,막걸리:1},w:{바람:1,맑음:1},t:'cool',s:{가을:3},m:{신남:1,심심:1},p:{포차:3,집:1},g:{둘이:2,여럿:2},h:{출출:2,배고픔:1},r:['전어 4~5마리','굵은 소금','양념간장(선택)'],l:'가을 전어 굽는 냄새에 집 나간 며느리도 돌아온다는 그 안주.',tip:'소금만. 다른 거 안 됩니다. 머리부터 꼬리까지 통째로.'},
+{n:'생굴',e:'🦪',d:{소주:3,사케:2,와인:1,막걸리:1},w:{한파:2,눈:1},t:'cold',s:{겨울:3},m:{축하:1,설렘:1,신남:1},p:{포차:2,집:2,이자카야:1},g:{둘이:2,여럿:2},h:{출출:2},r:['생굴 200g','초장','레몬','굴전이면 계란·부침가루'],l:'겨울 바다의 맛. 초장이냐 레몬이냐는 각자 알아서.',tip:'굴전까지 하면 막걸리도 같이 부를 수 있습니다.'},
+{n:'군고구마',e:'🍠',d:{막걸리:3,위스키:1,소주:1},w:{눈:3,한파:3},t:'cold',s:{겨울:3},m:{피곤:2,우울:2,설렘:1},p:{집:3,편의점:1},g:{혼술:3,둘이:1},h:{출출:2,배부름:1},r:['고구마 2개','에어프라이어 200도 30분','버터 한 조각(선택)'],l:'눈 오는 날 군고구마에 막걸리. 할머니 집 생각나는 조합.',tip:'버터 한 조각 올리면 위스키 안주가 됩니다. 진짜예요.'},
+{n:'봄나물전',e:'🌿',d:{막걸리:3,소주:1,사케:1},w:{맑음:1,비:1},t:'warm',s:{봄:3},m:{심심:1,피곤:1,설렘:1},p:{집:2,포차:1},g:{둘이:2,여럿:1},h:{출출:2},r:['두릅 또는 냉이 한 줌','부침가루 1컵','물 1컵','식용유','초간장'],l:'두릅, 냉이, 달래. 봄에만 먹을 수 있어서 더 맛있는 안주.',tip:'반죽은 묽게, 나물은 많이. 간장에 식초 한 방울.'},
+{n:'햄버거',e:'🍔',d:{맥주:3,하이볼:2,소맥:1},w:{},t:'any',m:{피곤:1,신남:1,스트레스:1},p:{집:2,호프집:1,편의점:1},g:{혼술:2,둘이:2},h:{배고픔:3},r:['배달 버거 세트 (끝)','또는 번·패티·치즈·양상추·소스'],l:'배고픈데 귀찮은 날. 한 손에 버거, 한 손에 맥주.',tip:'감자튀김 세트로 바꾸면 안주가 둘. 맥주는 라거보다 IPA가 잘 맞습니다.'},
+{n:'순대볶음',e:'🧆',d:{소주:3,소맥:2,막걸리:1},w:{한파:1,비:1,흐림:1},t:'cool',m:{스트레스:2,우울:1,신남:1},p:{포차:3,집:2},g:{둘이:2,여럿:1,혼술:1},h:{배고픔:2,출출:2},r:['순대 300g','양배추·양파·대파','고추장 1큰술','고춧가루 1큰술','들깨가루 2큰술'],l:'매콤한 양념에 들깨 가루. 포차 안주의 숨은 강자.',tip:'볶음밥까지 생각하면 양념을 좀 남겨두세요.'},
+{n:'마라탕',e:'🥘',d:{맥주:3,소맥:3,소주:2,하이볼:1},w:{한파:1,비:1},t:'cool',m:{빡침:3,스트레스:3,우울:1},p:{집:2,포차:1},g:{둘이:2,여럿:2},h:{배고픔:3},r:['마라탕 소스(밀키트)','두부피·분모자·배추·버섯','소고기 슬라이스 100g','땅콩'],l:'화나는 날엔 얼얼하게. 입이 마비되면 고민도 마비됩니다.',tip:'2단계 이상은 맥주가 필수. 두부피랑 분모자는 많이.'},
+{n:'오돌뼈',e:'🦴',d:{소주:3,소맥:2},w:{},t:'any',m:{빡침:2,스트레스:2,심심:1},p:{포차:3,집:1},g:{둘이:2,여럿:2},h:{출출:2},r:['오돌뼈 200g','고추장 2큰술','고춧가루·설탕·다진 마늘','양파·대파','주먹밥 재료'],l:'오독오독 씹는 소리가 안주. 매운맛은 덤.',tip:'주먹밥 꼭. 볶음밥 꼭. 둘 다 꼭.'},
+{n:'감자칩',e:'🍘',d:{하이볼:3,맥주:2,위스키:1,소주:1},w:{},t:'any',m:{심심:3,피곤:2},p:{집:3,편의점:3},g:{혼술:3},h:{배부름:3,출출:1},r:['감자칩 1봉','사워크림 또는 마요네즈+양파가루'],l:'아무 생각 없이 마시고 싶은 날. 봉지 뜯는 소리가 시작 신호.',tip:'하이볼엔 소금맛, 맥주엔 양파맛. 사워크림 있으면 찍어 먹기.'},
+];
+
+/* 상황 한 줄 (두 번째 문장) */
+const LINES = {
+  weather:{비:'비 오는 날엔 이게 법입니다.',눈:'눈 오는 날 따끈한 거 한 입이면 됐습니다.',폭염:'더울 땐 시원한 거 아니면 입에 안 들어가요.',한파:'이 날씨에 밖에 나가면 지는 겁니다.',맑음:'날씨 좋은 날엔 뭘 먹어도 맛있지만 이건 더 맛있어요.',흐림:'흐린 날엔 기름진 게 당기는 과학적 이유가 있습니다. 뭔지는 모릅니다.',바람:'바람 부는 날엔 뜨끈한 게 정답.'},
+  mood:{우울:'기분 안 좋은 날엔 먹는 걸로 복수합시다.',빡침:'매운 걸로 땀 빼면 화도 같이 빠집니다.',피곤:'오늘은 손 많이 가는 거 금지. 이걸로 끝.',설렘:'분위기 있는 날엔 안주도 분위기를 타야죠.',심심:'심심할 땐 오래 집어먹을 수 있는 게 최고.',축하:'축하할 땐 좀 쓰는 겁니다.',신남:'신난 김에 제대로 가시죠.',스트레스:'스트레스엔 고기 아니면 매운 거. 둘 다면 더 좋고.'},
+  people:{혼술:'혼자 먹기 딱 좋은 양입니다.',둘이:'둘이서 나눠 먹기 좋아요.',여럿:'여럿이면 양이 중요하죠. 이건 넉넉합니다.'},
+  place:{편의점:'편의점에서 3분이면 세팅 끝.',캠핑:'불 앞에서 먹으면 맛이 두 배.',포차:'포차 감성은 이게 책임집니다.',호프집:'호프집에서 이거 안 시키면 섭섭하죠.',집:'집에서 편하게. 배달이든 직접이든.',이자카야:'이자카야 가면 무조건 이거 먼저.'},
+};
+/* 특수 조합 (주종|안주) */
+const COMBOS = {
+  '와인|닭발':'와인에 닭발. 소믈리에가 웁니다. 그래도 해보면 또 신세계입니다.',
+  '위스키|라면':'위스키에 라면은 의외로 되는 조합. 국물 말고 면만.',
+  '막걸리|치즈 플래터':'막걸리에 치즈, 요즘 핫한 조합입니다. 브리 치즈면 완벽.',
+  '소주|다크 초콜릿':'소주에 초콜릿. 용감하십니다. 숙취는 책임 안 집니다.',
+  '사케|삼겹살':'사케에 삼겹살. 일본 사람도 하는 조합이니 당당하게.',
+  '와인|치킨':'와인에 치킨은 이미 외국에서 공인된 조합. 프라이드면 화이트, 양념이면 레드.',
+  '위스키|육포':'위스키와 육포. 서부 영화 주인공 되는 밤.',
+};
+const QUOTES = ['술은 적당히, 안주는 든든히.','첫 잔은 건배, 둘째 잔은 안주.','안주가 맛있으면 술이 덜 취합니다. (안 그렇습니다)','오늘 안주는 내일의 나를 위한 투자.','안주 없는 술자리는 반칙입니다.','많이 먹으라고 안주가 아니라, 오래 있으라고 안주입니다.'];
+
+/* ---------------- 상태 ---------------- */
+const state = {season:null, weather:'맑음', temp:18, drink:'소주', mood:'심심', place:'집', people:'혼술', hunger:'출출'};
+function seasonNow(){ const m=new Date().getMonth()+1; return m<=2||m===12?'겨울':m<=5?'봄':m<=8?'여름':'가을'; }
+state.season = seasonNow();
+const SEASON_TEMP = {봄:16,여름:29,가을:17,겨울:-2};
+state.temp = SEASON_TEMP[state.season];
+
+/* ---------------- 점수 ---------------- */
+function tempScore(pref, band){
+  const t = TEMP_TARGET[pref]||[]; if(!t.length) return 0;
+  if(t.includes(band)) return 2;
+  const d = Math.min(...t.map(x=>Math.abs(x-band)));
+  return d===1 ? 0.5 : -1.5;
+}
+function scoreItem(it, c, jitter){
+  let s = 0;
+  s += (it.d[c.drink]||0)*1.6;
+  s += (it.w[c.weather]||0)*1.2;
+  s += tempScore(it.t, bandOf(c.temp));
+  s += ((it.s||{})[c.season]||0)*1.0;
+  s += (it.m[c.mood]||0)*1.1;
+  s += (it.p[c.place]||0)*1.1;
+  s += (it.g[c.people]||0)*0.9;
+  s += (it.h[c.hunger]||0)*0.9;
+  if(jitter) s += Math.random()*1.2;
+  return s;
+}
+function rank(c, jitter=true){
+  return FOODS.map(f=>({f, s:scoreItem(f,c,jitter)})).sort((a,b)=>b.s-a.s);
+}
+function pct(s){ return Math.max(35, Math.min(99, Math.round(45 + s*2.4))); }
+function condLabels(c){
+  return [c.season, c.weather, `${c.temp}℃ ${BANDS[bandOf(c.temp)]}`, c.drink, c.mood, c.place, c.people, c.hunger];
+}
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+const SEASON_WEATHER = {봄:['맑음','흐림','비','바람'], 여름:['맑음','흐림','비','폭염','바람'], 가을:['맑음','흐림','비','바람'], 겨울:['맑음','흐림','눈','한파','바람']};
+function randomCond(){
+  const c = {};
+  for(const k in VARS) c[k] = pick(VARS[k].opts);
+  c.weather = pick(SEASON_WEATHER[c.season]);
+  const base = SEASON_TEMP[c.season] + Math.round((Math.random()-0.5)*10);
+  c.temp = c.weather==='폭염'?33+Math.floor(Math.random()*4) : c.weather==='한파'?-8+Math.floor(Math.random()*6) : c.weather==='눈'?-3+Math.floor(Math.random()*5) : base;
+  return c;
+}
+
+/* ---------------- 조건판 렌더 ---------------- */
+const board = document.getElementById('board');
+function renderBoard(){
+  let html = '';
+  for(const k in VARS){
+    const v = VARS[k];
+    html += `<div class="group"><h3>${v.label}${k==='season'?'<em>오늘 기준 자동 선택</em>':''}</h3><div class="chips" data-key="${k}">`;
+    for(const o of v.opts) html += `<button class="chip" type="button" data-val="${o}" aria-pressed="${state[k]===o}">${o}</button>`;
+    html += `</div></div>`;
+    if(k==='weather'){
+      html += `<div class="group"><h3>온도</h3><div class="temp"><input type="range" id="temp" min="-15" max="38" value="${state.temp}" aria-label="온도"><output id="tempOut"></output></div></div>`;
+    }
+  }
+  html += `<div class="toolrow"><button class="ghost" type="button" id="randomize">상황 랜덤</button><button class="ghost" type="button" id="reset">처음으로</button></div>`;
+  board.innerHTML = html;
+  updateTempOut();
+  board.querySelectorAll('.chips').forEach(g=>{
+    g.addEventListener('click', e=>{
+      const b = e.target.closest('.chip'); if(!b) return;
+      const key = g.dataset.key; state[key] = b.dataset.val;
+      g.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed', x===b));
+      if(key==='weather'){
+        if(state.weather==='폭염') setTemp(34); else if(state.weather==='한파') setTemp(-6); else if(state.weather==='눈') setTemp(-1);
+      }
+      if(key==='season' && !['폭염','한파','눈'].includes(state.weather)) setTemp(SEASON_TEMP[state.season]);
+    });
+  });
+  document.getElementById('temp').addEventListener('input', e=>{ state.temp = +e.target.value; updateTempOut(); });
+  document.getElementById('randomize').addEventListener('click', ()=>{ Object.assign(state, randomCond()); renderBoard(); });
+  document.getElementById('reset').addEventListener('click', ()=>{
+    Object.assign(state,{season:seasonNow(),weather:'맑음',drink:'소주',mood:'심심',place:'집',people:'혼술',hunger:'출출'}); state.temp=SEASON_TEMP[state.season]; renderBoard();
+    document.getElementById('receipt').classList.remove('on'); document.getElementById('pickActions').style.display='none';
+  });
+}
+function setTemp(v){ state.temp=v; const el=document.getElementById('temp'); if(el){el.value=v;} updateTempOut(); }
+function updateTempOut(){ const o=document.getElementById('tempOut'); if(o) o.value = `${state.temp}℃ · ${BANDS[bandOf(state.temp)]}`; }
+renderBoard();
+
+/* ---------------- 뽑기 ---------------- */
+const spinBtn = document.getElementById('spin'), reel = document.getElementById('reel'), reelWin = document.getElementById('reelWin');
+const receipt = document.getElementById('receipt');
+let spinning = false;
+spinBtn.addEventListener('click', doSpin);
+document.getElementById('again').addEventListener('click', doSpin);
+document.getElementById('randomAgain').addEventListener('click', ()=>{ Object.assign(state, randomCond()); renderBoard(); doSpin(); });
+
+function doSpin(){
+  if(spinning) return; spinning = true; spinBtn.disabled = true;
+  receipt.classList.remove('on'); document.getElementById('pickActions').style.display='none';
+  const ranked = rank(state);
+  const winner = ranked[0];
+  reel.classList.add('on'); reel.scrollIntoView({behavior:'smooth', block:'center'});
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const steps = reduced ? 1 : 22;
+  let i = 0;
+  const pool = ranked.slice(0, 12).map(r=>r.f);
+  (function tick(){
+    i++;
+    const f = i<steps ? pick(pool) : winner.f;
+    reelWin.textContent = `${f.e} ${f.n}`;
+    if(i<steps){ setTimeout(tick, 60 + Math.pow(i/steps,2)*260); }
+    else { reel.classList.add('shake'); setTimeout(()=>{ reel.classList.remove('shake'); showReceipt(ranked); }, 380); }
+  })();
+}
+function showReceipt(ranked){
+  const w = ranked[0], c = state, p = pct(w.s);
+  document.getElementById('rShop').textContent = document.getElementById('shop').textContent.trim() || '포차';
+  const d = new Date();
+  document.getElementById('rMeta').textContent = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} 주문서`;
+  document.getElementById('rCond').innerHTML = condLabels(c).map(x=>`<span>${x}</span>`).join('');
+  document.getElementById('rEmoji').textContent = w.f.e;
+  document.getElementById('rName').textContent = w.f.n;
+  const extras = [LINES.weather[c.weather], LINES.mood[c.mood], LINES.people[c.people], LINES.place[c.place]].filter(Boolean);
+  document.getElementById('rWhy').textContent = `${w.f.l} ${pick(extras)}`;
+  const combo = COMBOS[`${c.drink}|${w.f.n}`];
+  const cb = document.getElementById('rCombo'); cb.style.display = combo?'block':'none'; cb.textContent = combo?`특이 조합 발견: ${combo}`:'';
+  document.getElementById('rTip').textContent = `꿀팁: ${w.f.tip}`;
+  const selfPrep = c.people==='혼술' || ['집','캠핑','편의점'].includes(c.place);
+  const prep = document.getElementById('rPrep'); prep.classList.toggle('on', selfPrep);
+  if(selfPrep){
+    document.getElementById('rPrepNote').textContent = c.people==='혼술' ? '1인분 기준' : (c.people==='둘이'?'2인분은 두 배':'여럿이면 넉넉히');
+    document.getElementById('rPrepList').innerHTML = (w.f.r||[]).map(x=>`<li>${x}</li>`).join('');
+  }
+  const alts = ranked.slice(1,3);
+  document.getElementById('rAlts').innerHTML = `<li>이것도 괜찮아요</li>` + alts.map(a=>`<li><b>${a.f.e} ${a.f.n}</b><span>궁합 ${pct(a.s)}%</span></li>`).join('');
+  document.getElementById('rQuote').textContent = pick(QUOTES);
+  document.getElementById('pct').textContent = p;
+  const st = document.getElementById('stamp'); st.classList.remove('bang'); void st.offsetWidth; st.classList.add('bang');
+  receipt.classList.add('on'); document.getElementById('pickActions').style.display='flex';
+  receipt.scrollIntoView({behavior:'smooth', block:'start'});
+  if(p>=90) confetti();
+  spinning = false; spinBtn.disabled = false;
+}
+
+/* ---------------- 퀴즈 ---------------- */
+const Q = {no:0, score:0, combo:0, cur:null};
+const qEls = {no:document.getElementById('qNo'), score:document.getElementById('qScore'), cond:document.getElementById('qCond'), opts:document.getElementById('qOpts'), reveal:document.getElementById('qReveal'), next:document.getElementById('qNext'), final:document.getElementById('qFinal')};
+function quizStart(){ Q.no=0; Q.score=0; Q.combo=0; qEls.final.classList.remove('on'); quizNext(); }
+function quizNext(){
+  Q.no++;
+  if(Q.no>10){ return quizFinal(); }
+  const c = randomCond();
+  const ranked = rank(c, false);
+  const answer = ranked[0];
+  const tail = ranked.slice(Math.floor(ranked.length*0.45));
+  const wrong = [];
+  while(wrong.length<2){ const w = pick(tail); if(!wrong.includes(w) && w!==answer) wrong.push(w); }
+  const opts = [answer, ...wrong].sort(()=>Math.random()-0.5);
+  Q.cur = {c, answer, opts, ranked};
+  qEls.no.textContent = `${Q.no} / 10`;
+  qEls.score.innerHTML = `${Q.score}<small>점</small>`;
+  qEls.cond.innerHTML = condLabels(c).map(x=>`<span>${x}</span>`).join('');
+  qEls.opts.innerHTML = opts.map((o,i)=>`<button class="opt" type="button" data-i="${i}"><span class="e">${o.f.e}</span><span>${o.f.n}</span></button>`).join('');
+  qEls.reveal.classList.remove('on'); qEls.next.style.display='none';
+  qEls.opts.querySelectorAll('.opt').forEach(b=>b.addEventListener('click', ()=>quizAnswer(+b.dataset.i)));
+  document.getElementById('quiz').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function quizAnswer(i){
+  const {c, answer, opts} = Q.cur;
+  const chosen = opts[i];
+  const btns = qEls.opts.querySelectorAll('.opt');
+  btns.forEach((b,k)=>{ b.disabled=true; if(opts[k]===answer) b.classList.add('ok'); else if(k===i) b.classList.add('no'); });
+  let msg;
+  if(chosen===answer){
+    Q.combo++; const bonus = Q.combo>=3 ? 5 : 0; Q.score += 10 + bonus;
+    msg = `<b>정답!</b> ${Q.combo>=3?`${Q.combo}연속 콤보 +5점. `:''}${answer.f.e} ${answer.f.n}, 궁합 ${pct(answer.s)}%. ${answer.f.l} ${LINES.mood[c.mood]}`;
+  } else {
+    Q.combo = 0;
+    msg = `<b>아쉽네요.</b> 정답은 ${answer.f.e} ${answer.f.n} (궁합 ${pct(answer.s)}%). ${chosen.f.n}은(는) 궁합 ${pct(chosen.s)}%. ${answer.f.l}`;
+  }
+  qEls.reveal.innerHTML = msg; qEls.reveal.classList.add('on');
+  qEls.score.innerHTML = `${Q.score}<small>점</small>`;
+  qEls.next.style.display='block'; qEls.next.textContent = Q.no>=10 ? '결과 보기' : '다음 문제';
+}
+function quizFinal(){
+  const correct = Math.round(Q.score/10);
+  const r = Q.score>=120?'주신(酒神)':Q.score>=90?'포차 사장님':Q.score>=60?'안주 소믈리에':Q.score>=30?'안주 좀 아는 사람':'술린이';
+  document.getElementById('qRank').textContent = r;
+  document.getElementById('qFinalText').textContent = `${Q.score}점. ${r} 등급입니다.` + (Q.score>=120?' 안주로 먹고살아도 되겠습니다.':Q.score>=90?' 포차 하나 차리시죠.':Q.score>=60?' 친구들이 안주 고를 때 당신을 부릅니다.':Q.score>=30?' 몇 번만 더 마시면 됩니다.':' 안주는 사장님 추천으로.');
+  qEls.final.classList.add('on'); qEls.next.style.display='none';
+  qEls.final.scrollIntoView({behavior:'smooth', block:'center'});
+}
+qEls.next.addEventListener('click', quizNext);
+document.getElementById('qRestart').addEventListener('click', quizStart);
+
+/* ---------------- 모드 전환 ---------------- */
+const tabPick = document.getElementById('tabPick'), tabQuiz = document.getElementById('tabQuiz');
+function setMode(m){
+  tabPick.setAttribute('aria-selected', m==='pick'); tabQuiz.setAttribute('aria-selected', m==='quiz');
+  document.getElementById('pick').style.display = m==='pick'?'block':'none';
+  document.getElementById('quiz').classList.toggle('on', m==='quiz');
+  if(m==='quiz' && Q.no===0) quizStart();
+}
+tabPick.addEventListener('click', ()=>setMode('pick'));
+tabQuiz.addEventListener('click', ()=>setMode('quiz'));
+
+/* ---------------- 색종이 ---------------- */
+function confetti(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = document.getElementById('confetti'), ctx = cv.getContext('2d');
+  cv.width = innerWidth; cv.height = innerHeight;
+  const colors = ['#F4772B','#FFD166','#2BB673','#D62828','#FFF4E3'];
+  const ps = Array.from({length:90}, ()=>({x:cv.width/2+(Math.random()-0.5)*160, y:cv.height*0.35, vx:(Math.random()-0.5)*9, vy:-Math.random()*9-3, r:Math.random()*6+3, c:pick(colors), a:Math.random()*Math.PI}));
+  let t=0;
+  (function frame(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(const p of ps){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.28; p.a+=0.1; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a); ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6); ctx.restore(); }
+    if(++t<70) requestAnimationFrame(frame); else ctx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+</script>
+</body>
+</html>
