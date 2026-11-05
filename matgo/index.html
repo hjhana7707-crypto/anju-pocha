@@ -39,6 +39,8 @@ button{font:inherit;cursor:pointer}
 .zone-head .who{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--ivory)}
 .chip{background:rgba(243,233,210,.12);border:1px solid var(--line);border-radius:999px;padding:1px 10px;font-variant-numeric:tabular-nums}
 .cup-toggle{color:var(--gold);border-color:var(--gold);cursor:pointer;font-size:inherit}.cup-toggle:hover{background:rgba(217,168,69,.18)}
+.card .badge{position:absolute;right:2px;bottom:2px;background:var(--lacquer);color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:0 5px;line-height:1.5}
+.pick{background:none;border:2px solid var(--line);border-radius:10px;padding:6px;color:var(--fg);display:inline-flex;flex-direction:column;align-items:center;gap:4px;margin:0 8px 6px 0;font-size:14px}.pick:hover,.pick:focus-visible{border-color:var(--gold);outline:none}
 .m-card{height:110px;border-radius:7px;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .chip.hot{background:var(--lacquer);border-color:var(--lacquer);color:#fff}
 .hint{margin-left:auto;color:var(--gold);font-weight:500}
@@ -135,13 +137,15 @@ button{font:inherit;cursor:pointer}
     <div class="panel ledger"><h2>정산</h2><div id="ledger"><p class="empty">아직 끝난 판이 없습니다.</p></div></div>
     <div class="panel"><h2>진행 기록</h2><div id="log" class="log"></div></div>
     <details class="panel rules"><summary>적용 규칙</summary><ul>
-      <li>48장 화투, 각 10장씩 들고 바닥 8장, 더미 20장. 패는 월 순서로 정렬해 보여줍니다.</li>
+      <li>48장 화투 + 복고양이 2장, 각 10장씩 들고 바닥 8장, 더미 22장. 패는 월 순서로 정렬해 보여줍니다.</li>
       <li>광 3장 3점(비광 포함 2점) · 4장 4점 · 5장 15점.</li>
       <li>열끗 5장부터 1점, 한 장마다 +1. 고도리(2·4·8월) 5점. 국진(9월 열끗)은 가져올 때 열끗/쌍피 중 직접 고르고, 판 도중에도 점수 옆 버튼으로 바꿀 수 있음. 상대는 유리한 쪽 자동.</li>
       <li>띠 5장부터 1점, 한 장마다 +1. 홍단·청단·초단 각 3점.</li>
       <li>피 10장부터 1점, 한 장마다 +1. 쌍피는 2장.</li>
       <li>폭탄: 같은 월 3장을 들고 바닥에 1장 있으면 한꺼번에 내서 4장을 다 가져오고 상대 피 1장. 흔들기 ×2 적용, 이후 패 없이 더미만 뒤집는 차례 2번.</li>
-      <li>쪽 · 뻑 획득 · 따닥 · 싹쓸이: 상대 피 1장 가져옴.</li>
+      <li>쪽 · 뻑 획득 · 따닥 · 싹쓸이(판쓸이): 상대 피 1장 가져옴.</li>
+      <li>복고양이 보너스 2장: 한 장당 피 3장으로 계산. 손에 있으면 차례를 쓰지 않고 내려놓고 더미에서 1장 받음. 더미에서 나오면 바로 가져가고 한 장 더 뒤집음. 어느 쪽이든 상대 피 1장 가져옴.</li>
+      <li>바닥에 같은 월이 2장이고 종류가 다르면 가져올 패를 직접 고름.</li>
       <li>7점부터 고/스톱. 1고 +1, 2고 +2, 3고부터는 +고 수와 함께 ×2씩(3고 ×2, 4고 ×4).</li>
       <li>피박(상대 피 1~7장) ×2 · 광박 ×2 · 멍박(열끗 7장 이상, 상대 0장) ×2 · 고박 ×2 · 흔들기(같은 월 3장) ×2.</li>
       <li>나와 첫 상대 모두 10억으로 시작. 가진 돈보다 많이 잃으면 있는 만큼만 내고 오링. 상대가 오링 나면 다음 상대가 20억, 30억… 들고 나옵니다. 내 돈은 그대로 이어집니다.</li>
@@ -163,7 +167,9 @@ const CARDS=[];
 for(const m in DEF){DEF[m].forEach((s,i)=>{const [k,tag]=s.split(':');const c={id:m+'-'+i,m:+m,kind:k==='g'?'gwang':k==='y'?'yeol':k==='t'?'tti':'pi',tag:tag||'',pi:k==='pp'?2:k==='p'?1:0,cup:tag==='cup'};
   c.name=c.kind==='gwang'?(c.m===12?'비광':'광'):c.kind==='yeol'?YN[c.m]:c.kind==='tti'?(tag==='hong'?'홍단':tag==='cheong'?'청단':tag==='cho'?'초단':'비띠'):(c.pi===2?'쌍피':'피');
   c.label=c.m+'월 '+MN[c.m]+' '+c.name;CARDS.push(c);});}
-function cv(c){if(c.kind==='gwang')return c.m===12?7:10;if(c.kind==='yeol')return c.tag==='godori'?6:c.cup?4:3;if(c.kind==='tti')return c.tag==='bi'?1.5:c.tag==='cho'?3:3.5;return c.pi===2?2.4:1.2;}
+for(const id of ['bonus','bonus2'])CARDS.push({id,m:0,kind:'pi',tag:'bonus',pi:3,cup:false,bonus:true,name:'복고양이',label:'복고양이 보너스 (피 3장)'});
+const differ=a=>a[0].kind!==a[1].kind||a[0].pi!==a[1].pi||a[0].tag!==a[1].tag;
+function cv(c){if(c.bonus)return 6;if(c.kind==='gwang')return c.m===12?7:10;if(c.kind==='yeol')return c.tag==='godori'?6:c.cup?4:3;if(c.kind==='tti')return c.tag==='bi'?1.5:c.tag==='cho'?3:3.5;return c.pi===2?2.4:1.2;}
 
 
 /* 점수 계산 */
@@ -216,25 +222,29 @@ class Game{
       this.hands[p].sort((a,b)=>a.m-b.m||KW[a.kind]-KW[b.kind]);
       for(let m=1;m<=12;m++){const n=this.hands[p].filter(c=>c.m===m).length;if(n===4)this.chongtong=p;else if(n===3)this.shake[p]++;}
     }
+    this.bonusAtDeal=null;for(let bi;(bi=this.floor.findIndex(c=>c.bonus))>=0;){this.captured[this.first].push(this.floor.splice(bi,1)[0]);this.bonusAtDeal=this.first;}
     if(this.chongtong)this.settle(this.chongtong,{chongtong:true});
   }
   canBomb(p,m){return this.hands[p].filter(c=>c.m===m).length===3&&this.floor.filter(f=>f.m===m).length===1;}
   playBomb(p,m){const cs=this.hands[p].filter(c=>c.m===m);this.hands[p]=this.hands[p].filter(c=>c.m!==m);const f=this.floor.find(x=>x.m===m);this.floor.push(...cs);this.skip[p]+=2;
     this.ctx={p,c:cs[0],same:3,pend:[...cs,f],rest:null,specials:['폭탄'],steals:1,d:null};return {cards:cs,pend:this.ctx.pend};}
   flipOnly(p){this.skip[p]--;this.ctx={p,c:null,same:0,pend:[],rest:null,specials:[],steals:0,d:null};return {pend:[]};}
-  stealPi(to){const pool=this.captured[other(to)];let i=pool.findIndex(c=>c.kind==='pi'&&c.pi===1);if(i<0)i=pool.findIndex(c=>c.kind==='pi');if(i<0)return null;const c=pool.splice(i,1)[0];this.captured[to].push(c);return c;}
+  playBonus(p){const h=this.hands[p];const c=h.splice(h.findIndex(x=>x.bonus),1)[0];this.captured[p].push(c);const stolen=this.stealPi(p);const drawn=this.deck.pop()||null;if(drawn){h.push(drawn);h.sort((a,b)=>a.m-b.m||KW[a.kind]-KW[b.kind]);}return {card:c,stolen,drawn};}
+  choose(b){const ctx=this.ctx;ctx.pend=[ctx.c,b];ctx.rest=ctx.choice.find(x=>x!==b);ctx.choice=null;}
+  chooseFlip(b){this.ctx.pend.push(b);this.ctx.flipChoice=null;}
+  stealPi(to){const pool=this.captured[other(to)];let i=-1;for(const v of [1,2,3]){i=pool.findIndex(c=>c.kind==='pi'&&c.pi===v);if(i>=0)break;}if(i<0)return null;const c=pool.splice(i,1)[0];this.captured[to].push(c);return c;}
   playHand(p,id){
     const hand=this.hands[p];const i=hand.findIndex(c=>c.id===id);const c=hand.splice(i,1)[0];
     const same=this.floor.filter(f=>f.m===c.m);
     this.floor.push(c);
     const ctx={p,c,same:same.length,pend:[],rest:null,specials:[],steals:0,d:null};
     if(same.length===1)ctx.pend=[c,same[0]];
-    else if(same.length===2){const b=pickBest(same);ctx.pend=[c,b];ctx.rest=same.find(x=>x!==b);}
+    else if(same.length===2){if(p==='me'&&differ(same)){ctx.pend=[c];ctx.choice=same;}else{const b=pickBest(same);ctx.pend=[c,b];ctx.rest=same.find(x=>x!==b);}}
     else if(same.length===3){ctx.pend=[c,...same];if(this.ppeok[c.m]){ctx.steals++;ctx.specials.push(this.ppeok[c.m]===p?'자뻑':'뻑 획득');}}
-    this.ctx=ctx;return {card:c,same:same.length,pend:ctx.pend};
+    this.ctx=ctx;return {card:c,same:same.length,pend:ctx.pend,choice:ctx.choice||null};
   }
   flip(p){
-    const ctx=this.ctx;const d=this.deck.pop()||null;ctx.d=d;if(!d)return {d:null,pend:ctx.pend,matched:false};
+    const ctx=this.ctx;let d=this.deck.pop()||null;const bon=[];while(d&&d.bonus){this.captured[p].push(d);ctx.steals++;ctx.specials.push('복고양이');bon.push(d);d=this.deck.pop()||null;}ctx.d=d;if(!d)return {d:null,pend:ctx.pend,matched:false,bon};
     this.floor.push(d);const c=ctx.c;let matched=false;
     if(c&&d.m===c.m){
       matched=true;
@@ -245,10 +255,10 @@ class Game{
       const others=this.floor.filter(f=>f.m===d.m&&f!==d);
       if(others.length)matched=true;
       if(others.length===1)ctx.pend.push(d,others[0]);
-      else if(others.length===2)ctx.pend.push(d,pickBest(others));
+      else if(others.length===2){if(p==='me'&&differ(others)){ctx.pend.push(d);ctx.flipChoice=others;}else ctx.pend.push(d,pickBest(others));}
       else if(others.length===3){ctx.pend.push(d,...others);if(this.ppeok[d.m]){ctx.steals++;ctx.specials.push(this.ppeok[d.m]===p?'자뻑':'뻑 획득');}}
     }
-    return {d,pend:ctx.pend,matched};
+    return {d,pend:ctx.pend,matched,bon,choice:ctx.flipChoice||null};
   }
   resolve(p){
     const ctx=this.ctx;const pend=ctx.pend;
@@ -322,7 +332,7 @@ let game=new Game(),busy=false,fresh=new Set();
 function cardEl(c,opt={}){
   const d=document.createElement('div');
   d.className='card'+(opt.back?' back':'')+(opt.playable?' playable':'')+(opt.pending?' pending':'')+(fresh.has(c.id)?' fresh':'');
-  if(!opt.back){d.innerHTML='<img src="'+c.id+'.jpg" alt="'+c.label+'" draggable="false">';d.title=c.label;}
+  if(!opt.back){d.innerHTML='<img src="'+c.id+'.jpg" alt="'+c.label+'" draggable="false">'+(c.bonus?'<span class="badge">3피</span>':'');d.title=c.label;}
   if(opt.playable){d.tabIndex=0;d.setAttribute('role','button');d.setAttribute('aria-label',c.label+' 내기');d.addEventListener('click',()=>userPlay(c.id));d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();userPlay(c.id);}});}
   return d;
 }
@@ -379,16 +389,21 @@ function showBombModal(c){
   acts.appendChild(btn('취소','',()=>hideModal()));
   $('modal').hidden=false;
 }
-async function aiTurn(){let a;if(game.hands.ai.length===0||(game.skip.ai>0&&Math.random()<0.3))a={flip:true};else{const c=aiPick(game);a=c.bomb?c:c.id;}await doTurn('ai',a);}
+async function aiTurn(){let a;const bc=game.hands.ai.find(c=>c.bonus);if(bc)a=bc.id;else if(game.hands.ai.length===0||(game.skip.ai>0&&Math.random()<0.3))a={flip:true};else{const c=aiPick(game);a=c.bomb?c:c.id;}await doTurn('ai',a);}
 async function doTurn(p,act){
   busy=true;let r1;
+  const bc=typeof act==='string'&&game.hands[p].find(c=>c.id===act&&c.bonus);
+  if(bc){const r=game.playBonus(p);fresh.add(bc.id);if(r.drawn&&p==='me')fresh.add(r.drawn.id);
+    say(who(p)+' 복고양이! 피 3장'+(r.stolen?' + 상대 피 1장':''));if(r.stolen)game.log.push(who(p)+' ← 상대 피 1장 ('+r.stolen.label+')');game.log.push(who(p)+' 더미에서 1장 받음');
+    render();await sleep(900);if(p==='me'){busy=false;render();}else await aiTurn();return;}
   if(act&&act.flip){r1=game.flipOnly(p);game.log.push('<b>'+who(p)+'</b> 패 없이 더미만 뒤집기');}
   else if(act&&act.bomb){r1=game.playBomb(p,act.bomb);r1.cards.forEach(c=>fresh.add(c.id));game.log.push('<b>'+who(p)+'</b> '+act.bomb+'월 석 장 폭탄!');}
   else{r1=game.playHand(p,act);fresh.add(r1.card.id);game.log.push('<b>'+who(p)+'</b> '+r1.card.label+(r1.same===0?' 내려놓음':r1.same===3?' → 석 장 모두 가져감':' → 짝 맞춤'));}
-  $('banner').textContent=act&&act.bomb?who(p)+' 폭탄!':'';render(r1.pend);await sleep(act&&act.flip?250:650);
+  $('banner').textContent=act&&act.bomb?who(p)+' 폭탄!':'';render(r1.pend);if(r1.choice){const b=await askPick(r1.choice);game.choose(b);render(game.ctx.pend);}await sleep(act&&act.flip?250:650);
   const r2=game.flip(p);if(r2.d)fresh.add(r2.d.id);
   game.log.push('더미 '+(r2.d?r2.d.label:'(없음)')+(r2.matched?' → 짝 맞춤':''));
-  render(r2.pend);await sleep(650);
+  if(r2.bon&&r2.bon.length)game.log.push(who(p)+' 더미에서 복고양이! 가져가고 한 장 더 뒤집음');
+  render(r2.pend);if(r2.choice){const b=await askPick(r2.choice);game.chooseFlip(b);render(game.ctx.pend);}await sleep(650);
   const r3=game.resolve(p);
   if(r3.specials.length)say(who(p)+' '+r3.specials.join(' · ')+'!');
   r3.stolen.forEach(c=>game.log.push(who(p)+' ← 상대 피 1장 ('+c.label+')'));
@@ -402,7 +417,7 @@ async function doTurn(p,act){
     else{game.stop('ai');render();showResult();busy=false;return;}
   }
   if(game.isFinished()){game.endNagari();render();showResult();busy=false;return;}
-  game.turn=other(p);
+  game.turn=other(p);if(game.hands[game.turn].length===0&&game.skip[game.turn]===0)game.turn=p;
   if(game.turn==='ai'){render();await sleep(550);await aiTurn();}
   else{busy=false;render();}
 }
@@ -414,6 +429,10 @@ function showGoModal(need){
   acts.appendChild(btn('스톱','gold',()=>{hideModal();game.stop('me');render();showResult();busy=false;}));
   $('modal').hidden=false;
 }
+function askPick(opts){return new Promise(res=>{
+  $('m-title').textContent='어느 패를 가져올까요?';const w=$('m-big');w.innerHTML='';
+  opts.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='pick';b.innerHTML='<img class="m-card" src="'+c.id+'.jpg" alt="'+c.label+'"><span>'+c.name+'</span>';b.addEventListener('click',()=>{hideModal();res(c);});w.appendChild(b);});
+  $('m-lines').textContent='바닥에 같은 월이 2장 있습니다. 가져올 패를 누르세요.';$('m-acts').innerHTML='';$('modal').hidden=false;});}
 function askCup(){return new Promise(res=>{
   $('m-title').textContent='국진을 어떻게 쓸까요?';$('m-big').innerHTML='<img class="m-card" src="9-0.jpg" alt="9월 국화 국진">';
   $('m-lines').innerHTML='열끗으로 두면 열끗 1장, 쌍피로 쓰면 피 2장으로 셉니다.<br>판 도중에도 내 점수 옆 <b>국진</b> 버튼으로 바꿀 수 있습니다.';
@@ -441,6 +460,7 @@ async function newRound(){
   busy=true;game.deal();
   if(game.round===1)game.log.push('<b>'+game.opp.name+'</b> 등장 · 판돈 '+wonStr(game.opp.bank)+(game.stage>1?' · '+game.stage+'번째 상대':''));
   game.log.push('<b>'+game.round+'판</b> 시작 · 선: '+who(game.first)+(game.nagari>1?' · 나가리 ×'+game.nagari:''));
+  if(game.bonusAtDeal)game.log.push('바닥에 깔린 복고양이는 선('+who(game.bonusAtDeal)+')이 가져감');
   for(const p of ['me','ai'])if(game.shake[p])game.log.push(who(p)+' 흔들기! (같은 월 3장, ×'+(2**game.shake[p])+')');
   $('banner').textContent='';render();
   if(game.over){showResult();busy=false;return;}
